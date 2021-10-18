@@ -132,10 +132,52 @@ phot_table['mag'] = ZP - 2.5*np.log10(phot_table['flux'])
 
 print(phot_table)
 #%%
-
+# getting plots
 diagnostic_plots(data,image_names[0],apertures,annulus_apertures,ZP,phot_table,outputs_path)
 
+#%%
+# annulus stuff
+annulus_masks = annulus_apertures.to_mask(method='center')
+plt.imshow(annulus_masks[0], interpolation='nearest')
+plt.colorbar()
+annulus_data = annulus_masks[0].multiply(data)
+mask = annulus_masks[0].data
+annulus_data_1d = annulus_data[mask > 0]
+print(annulus_data_1d.shape)
+_, median_sigclip, _ = sigma_clipped_stats(annulus_data_1d)
+print(median_sigclip)  
 
+# background subtraction stuff
+bkg_median = []
+for mask in annulus_masks:
+    annulus_data = mask.multiply(data)
+    annulus_data_1d = annulus_data[mask.data > 0]
+    _, median_sigclip, _ = sigma_clipped_stats(annulus_data_1d)
+    bkg_median.append(median_sigclip)
+bkg_median = np.array(bkg_median)
+
+# Spitzer catalog stuff
+hdu = load_spitzer_image()  
+data = u.Quantity(hdu.data, unit=hdu.header['BUNIT'])  
+wcs = WCS(hdu.header)  
+catalog = load_spitzer_catalog() 
+positions = SkyCoord(catalog['l'], catalog['b'], frame='galactic')  
+aperture = SkyCircularAperture(positions, r=4.8 * u.arcsec) 
+
+# error stuff
+error = 0.1 * data
+
+#%%
+phot_table = aperture_photometry(data, apertures, error=error, wcs=wcs)
+phot_table['annulus_median'] = bkg_median
+phot_table['aper_bkg'] = bkg_median * apertures.area
+phot_table['aper_sum_bkgsub'] = phot_table['aperture_sum'].value - phot_table['aper_bkg']
+factor = (1.2 * u.arcsec) ** 2 / u.pixel
+fluxes_catalog = catalog['f4_5']  
+converted_aperture_sum = (phot_table['aperture_sum'] * factor).to(u.mJy / u.pixel) 
+print(phot_table)
+
+#%%
 
 
 
