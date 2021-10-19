@@ -47,7 +47,7 @@ code_home_path = "C:/Users/ave41/OneDrive - University of Canterbury/MSc Astrono
 os.chdir(code_home_path) #from now on, we are in this directory
 
 # importing functions
-from flux_and_photometry_funcs import *
+from flux_cal_funcs import *
 
 ###############################################################################
 #----------------------SECTION ONE: INITIALISATION----------------------------#
@@ -65,11 +65,20 @@ images_path = Path("//spcsfs/ave41/astro/ave41/ObsData-2021-02-13/ALERT/Reduced 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 # filtering data files
-lst_of_images = [str(images_path) +"/" + n 
+# lst_of_images = [str(images_path) +"/" + n 
+#                   for n in os.listdir(images_path) if (n.endswith('fit')) and n.__contains__('-aligned-')]
+
+# image_names = [n for n in os.listdir(images_path) if (n.endswith('fit')) and n.__contains__('-aligned-')]
+
+temp_short_lst = [str(images_path) +"/" + n 
                   for n in os.listdir(images_path) if (n.endswith('fit')) and n.__contains__('-aligned-')]
-image_names = [n for n in os.listdir(images_path) if (n.endswith('fit')) and n.__contains__('-aligned-')]
+
+temp_image_names = [n for n in os.listdir(images_path) if (n.endswith('fit')) and n.__contains__('-aligned-')]
+
 outputs_path = path_checker(images_path,'Flux and Photometry Outputs')
 
+lst_of_images = temp_short_lst[:3]
+image_names = temp_image_names[:3]
 
 for i in range(len(lst_of_images)):
     # Read the image
@@ -117,52 +126,6 @@ for i in range(len(lst_of_images)):
     new_t1, new_s2, zp, final_calibrated_mags = sm_to_moa_transform(sm_sources,moa_sources)
     
     # PLOTS
-    plt.figure()
-    plt.plot(sm_sources['g']-sm_sources['r'],sm_sources['MOA_R_est']-sm_sources['r'],'.',color="darkviolet")
-    plt.xlabel("g-r")
-    plt.ylabel("MOA-R - r")
-    plt.grid("both")
-    plt.title("(g-r) vs (MOA-R - r)")
-    plt.savefig(outputs_path/"sm_sources_colour-{}.jpeg".format(image_names[i]),dpi=900)
-    plt.show()
+    plotting_funcs_flux_cal(image_names[i],sm_sources,zp,new_t1,new_s2,
+                                final_calibrated_mags,outputs_path)
     
-    plt.hist(zp,bins=100,color="darkviolet")
-    plt.grid("both")
-    plt.xlabel("zero points")
-    plt.ylabel("frequency")
-    plt.title("Calibrated Zero Points of Sources")
-    plt.savefig(outputs_path/"cal_zp-{}.jpeg".format(image_names[i]),dpi=900)
-    plt.show()
-        
-    plt.hist(new_t1['mag'],bins=100,color="darkviolet")
-    plt.grid("both")
-    plt.xlabel("apparent magnitudes")
-    plt.ylabel("frequency")
-    plt.title("Calibrated Apparent Magnitudes of Sources")
-    plt.savefig(outputs_path/"hist_cal_mags-{}.jpeg".format(image_names[i]),dpi=900)
-    plt.show()
-    
-    plt.plot(new_t1['flux'],new_t1['mag'],'.',color="darkviolet")
-    plt.grid("both")
-    plt.xlabel("flux")
-    plt.ylabel("magnitude")
-    plt.title("Calibrated Apparent Magnitudes of Sources")
-    plt.savefig(outputs_path/"flux_vs_cal_mags-{}.jpeg".format(image_names[i]),dpi=900)
-    plt.show()
-    
-    plt.hist(final_calibrated_mags,bins=50,color="darkviolet")
-    plt.grid("both")
-    plt.xlabel("apparent magnitudes")
-    plt.ylabel("frequency")
-    plt.title("Final Calibrated Magnitudes of Sources")
-    plt.savefig(outputs_path/"final_cal_mags-{}.jpeg".format(image_names[i]),dpi=900)
-    plt.show()
-    
-    plt.figure()
-    plt.plot(new_s2['g']-new_s2['r'],final_calibrated_mags,'.',color="darkviolet")
-    plt.xlabel("g-r")
-    plt.ylabel("magnitudes")
-    plt.grid("both")
-    plt.title("(g-r) vs magnitudes")
-    plt.savefig(outputs_path/"final_cal_colour-{}.jpeg".format(image_names[i]),dpi=900)
-    plt.show()
