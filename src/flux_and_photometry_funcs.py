@@ -29,6 +29,10 @@ import os
 import glob
 from pathlib import Path
 
+# misc packages
+import calibrimbore as cal 
+from copy import deepcopy
+
 # initialising starting directory
 code_home_path = "C:/Users/ave41/OneDrive - University of Canterbury/MSc Astronomy/MSc 2021/ASTR480 Research/ASTR480 Code/01 Data Reduction Pipeline/DataReductionPipeline/src"
 os.chdir(code_home_path) #from now on, we are in this directory
@@ -67,11 +71,9 @@ def postions_and_apertures(sources):
         for index in range(len(x_vals)):
             to_return = (x_vals[index],y_vals[index])
             the_lst.append(to_return)
-    
         positions = (sources['xcentroid'], sources['ycentroid'])
         apertures = CircularAperture(the_lst, r=20.0)
         positions = the_lst
-    
     except KeyError:
         positions = (sources['ra'], sources['dec'])
         the_lst = []
@@ -80,13 +82,39 @@ def postions_and_apertures(sources):
         for index in range(len(x_vals)):
             to_return = (x_vals.to_numpy()[index],y_vals.to_numpy()[index])
             the_lst.append(to_return)
-    
         positions = (sources['ra'], sources['dec'])
         apertures = CircularAperture(the_lst, r=20.0)
         positions = the_lst
-
     return apertures, positions
 
+def pixels_to_ra_dec(image,sources):
+    f = fits.open(image)
+    w = WCS(f[0].header)
+    ra_dec_sources = []
+    for i in range(len(sources['xcentroid'])):
+        sky = w.pixel_to_world(sources['xcentroid'][i],sources['ycentroid'][i])
+        sources['xcentroid'][i] = (sky.ra * u.deg).value
+        sources['ycentroid'][i] = (sky.dec * u.deg).value
+    return sources
+
+def skymapper_sources(my_target_coords):
+    coords = my_target_coords 
+    c = SkyCoord(coords,unit=(u.hourangle, u.deg))
+    try:
+        sm_sources = cal.get_skymapper_region(c.ra.deg,c.dec.deg)
+    except:
+        sm_sources = cal.get_skymapper_region(c.ra.deg,c.dec.deg,size=0.4*60**2)
+    
+    ind = (np.isfinite(sm_sources.r.values) & np.isfinite(sm_sources.i.values) 
+           & np.isfinite(sm_sources.z.values) & (sm_sources['g'].values < 19) & (sm_sources['g'].values > 13))
+    sm_sources = sm_sources.iloc[ind]
+    return sm_sources
+
+
+
+###############################################################################
+###############################----PLOTS----###################################
+###############################################################################
 
 def diagnostic_plots(data,image_name,apertures,annulus_apertures,ZP,phot_table,outputs_path):
     # Display the image and overlay the apertures and anulli - zoom in to check that they are OK 
