@@ -213,7 +213,7 @@ def plotting_funcs_flux_cal(img_name,sm_sources,zp,new_t1,new_s2,
     plt.ylabel("MOA-R - r")
     plt.grid("both")
     plt.title("(g-r) vs (MOA-R - r)")
-    plt.savefig(outputs_path/"sm_sources_colour-{}.jpeg".format(image_names[i]),dpi=900)
+    plt.savefig(outputs_path/"sm_sources_colour-{}.jpeg".format(img_name),dpi=900)
     plt.show()
         
     plt.hist(zp,bins=100,color="darkviolet")
@@ -221,7 +221,7 @@ def plotting_funcs_flux_cal(img_name,sm_sources,zp,new_t1,new_s2,
     plt.xlabel("zero points")
     plt.ylabel("frequency")
     plt.title("Calibrated Zero Points of Sources")
-    plt.savefig(outputs_path/"cal_zp-{}.jpeg".format(image_names[i]),dpi=900)
+    plt.savefig(outputs_path/"cal_zp-{}.jpeg".format(img_name),dpi=900)
     plt.show()
             
     plt.hist(new_t1['mag'],bins=100,color="darkviolet")
@@ -229,7 +229,7 @@ def plotting_funcs_flux_cal(img_name,sm_sources,zp,new_t1,new_s2,
     plt.xlabel("apparent magnitudes")
     plt.ylabel("frequency")
     plt.title("Calibrated Apparent Magnitudes of Sources")
-    plt.savefig(outputs_path/"hist_cal_mags-{}.jpeg".format(image_names[i]),dpi=900)
+    plt.savefig(outputs_path/"hist_cal_mags-{}.jpeg".format(img_name),dpi=900)
     plt.show()
         
     plt.plot(new_t1['flux'],new_t1['mag'],'.',color="darkviolet")
@@ -237,7 +237,7 @@ def plotting_funcs_flux_cal(img_name,sm_sources,zp,new_t1,new_s2,
     plt.xlabel("flux")
     plt.ylabel("magnitude")
     plt.title("Calibrated Apparent Magnitudes of Sources")
-    plt.savefig(outputs_path/"flux_vs_cal_mags-{}.jpeg".format(image_names[i]),dpi=900)
+    plt.savefig(outputs_path/"flux_vs_cal_mags-{}.jpeg".format(img_name),dpi=900)
     plt.show()
         
     plt.hist(final_calibrated_mags,bins=50,color="darkviolet")
@@ -245,7 +245,7 @@ def plotting_funcs_flux_cal(img_name,sm_sources,zp,new_t1,new_s2,
     plt.xlabel("apparent magnitudes")
     plt.ylabel("frequency")
     plt.title("Final Calibrated Magnitudes of Sources")
-    plt.savefig(outputs_path/"final_cal_mags-{}.jpeg".format(image_names[i]),dpi=900)
+    plt.savefig(outputs_path/"final_cal_mags-{}.jpeg".format(img_name),dpi=900)
     plt.show()
         
     plt.figure()
@@ -254,5 +254,5 @@ def plotting_funcs_flux_cal(img_name,sm_sources,zp,new_t1,new_s2,
     plt.ylabel("magnitudes")
     plt.grid("both")
     plt.title("(g-r) vs magnitudes")
-    plt.savefig(outputs_path/"final_cal_colour-{}.jpeg".format(image_names[i]),dpi=900)
+    plt.savefig(outputs_path/"final_cal_colour-{}.jpeg".format(img_name),dpi=900)
     plt.show()

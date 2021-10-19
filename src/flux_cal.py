@@ -77,8 +77,8 @@ temp_image_names = [n for n in os.listdir(images_path) if (n.endswith('fit')) an
 
 outputs_path = path_checker(images_path,'Flux and Photometry Outputs')
 
-lst_of_images = temp_short_lst[:3]
-image_names = temp_image_names[:3]
+lst_of_images = [temp_short_lst[0]]
+image_names = [temp_image_names[0]]
 
 for i in range(len(lst_of_images)):
     # Read the image
@@ -128,4 +128,8 @@ for i in range(len(lst_of_images)):
     # PLOTS
     plotting_funcs_flux_cal(image_names[i],sm_sources,zp,new_t1,new_s2,
                                 final_calibrated_mags,outputs_path)
+    
+    #---------------------SECTION SIX: COMET PHOTOMETRY---------------------------#
+    
+    # do jpl horizons stuff here to find coords of comet
     
