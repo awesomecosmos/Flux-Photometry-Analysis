@@ -24,9 +24,14 @@ from photutils import DAOStarFinder, aperture_photometry
 from photutils.background import Background2D, MedianBackground
 from photutils.datasets import load_spitzer_image, load_spitzer_catalog
 
+# misc packages
+import calibrimbore as cal 
+from copy import deepcopy
+
 # path-type packages
 import os
 import glob
+from glob import glob
 from pathlib import Path
 
 # initialising starting directory
@@ -77,6 +82,12 @@ outputs_path = path_checker(images_path,'Flux and Photometry Outputs')
 # Read the image
 data, hdr = fits.getdata(lst_of_images[0], header=True)
 
+with fits.open(lst_of_images[0], "append") as img_hdul:
+    img_hdr1 = img_hdul[0].header
+    target_ra = img_hdr1['RA      '].strip(' ')
+    target_dec = img_hdr1['DEC     '].strip(' ')
+    my_target_coords = [str(target_ra) + " " + str(target_dec)]
+
 #%%
 ###############################################################################
 #--------------------SECTION TWO: BACKGROUND DETECTION------------------------#
@@ -92,7 +103,7 @@ bkg = get_bkg_info(data)
 ###############################################################################
 
 # Start up the DAOStarFinder object and detect stars
-daofind = DAOStarFinder(fwhm=5.0, threshold=5.*std)    
+daofind = DAOStarFinder(fwhm=3.0, threshold=5.*std)    
 sources = daofind(data - median)
 
 #%%
@@ -125,10 +136,116 @@ sky_mean = phot_table['aperture_sum_1'] / annulus_apertures.area
 aperture_sky_sum = sky_mean * apertures.area
 phot_table['flux'] = phot_table['aperture_sum_0'] - aperture_sky_sum
 
+#%%
+f = fits.open(lst_of_images[0])
+w = WCS(f[0].header)
+ra_dec_sources = []
+for i in range(len(sources['xcentroid'])):
+    sky = w.pixel_to_world(sources['xcentroid'][i],sources['ycentroid'][i])
+    sources['xcentroid'][i] = (sky.ra * u.deg).value
+    sources['ycentroid'][i] = (sky.dec * u.deg).value
+    #print(sources['xcentroid'][i],sources['ycentroid'][i])
+    #ra_dec_sources.append([(sky.ra * u.deg).value, (sky.dec * u.deg).value])
+
+#%% # RYAN'S CODE
+#########################################################
+R_filter = 'moared.txt' #wavelengths, ?
+R_fit = cal.sauron(band=R_filter,system='skymapper',gr_lims=[-.5,0.8],plot=True,cubic_corr=False)
+
+coords = my_target_coords 
+c = SkyCoord(coords,unit=(u.hourangle, u.deg))
+
+try:
+    sm_sources = cal.get_skymapper_region(c.ra.deg,c.dec.deg)
+except:
+    sm_sources = cal.get_skymapper_region(c.ra.deg,c.dec.deg,size=0.4*60**2)
+
+ind = (np.isfinite(sm_sources.r.values) & np.isfinite(sm_sources.i.values) 
+       & np.isfinite(sm_sources.z.values) & (sm_sources['g'].values < 19) & (sm_sources['g'].values > 13))
+sm_sources = sm_sources.iloc[ind]
+
+R_estimates = R_fit.estimate_mag(mags = sm_sources)
+
+sm_sources['MOA_R_est'] = R_estimates
+
+plt.figure()
+plt.plot(sm_sources['g']-sm_sources['r'],sm_sources['MOA_R_est']-sm_sources['r'],'.',color="darkviolet")
+plt.xlabel("g-r")
+plt.ylabel("MOA-R - r")
+plt.grid("both")
+plt.title("(g-r) vs (MOA-R - r)")
+
+s1 = deepcopy(sm_sources)
+s2 = deepcopy(sm_sources)
+
+dra = s1['ra'].values[:,np.newaxis] - s2['ra'].values[np.newaxis,:]
+ddec = s1['dec'].values[:,np.newaxis] - s2['dec'].values[np.newaxis,:]
+
+dist = np.sqrt(dra**2 + ddec**2)
+
+min_value = np.nanmin(dist,axis=0)
+min_index = np.argmin(dist,axis=0)
+
+#%%
+sm_apertures, sm_positions = postions_and_apertures(sm_sources)
+
+# Set up a set of circular apertures (one for each position) with a radius of 5 pixels and annuli with
+# inner and outer radii of 10 and 15 pixels.
+sm_apertures = CircularAperture(sm_positions, r=5)
+sm_annulus_apertures = CircularAnnulus(sm_positions, r_in=10, r_out=15)
+
+# Measure the total flux in both the aperture and annulus for each star. 
+sm_apers = [sm_apertures, sm_annulus_apertures]
+sm_phot_table = aperture_photometry(s1, sm_apers, method='subpixel',
+                                 subpixels=5)
+
+# Calculate the mean flux per pixel in the annulus
+sm_sky_mean = sm_phot_table['aperture_sum_1'] / sm_annulus_apertures.area
+
+# Multiply this by the number of pixels in the aperture and subtract from the aperture flux measurement.
+# Put the result in a new column of the table.
+sm_aperture_sky_sum = sm_sky_mean * sm_apertures.area
+sm_phot_table['flux'] = sm_phot_table['aperture_sum_0'] - sm_aperture_sky_sum
+
+
+
+#%%
+
+# good_indices = []
+# for i in range(len(ra_dec_sources)):
+#     if (ra_dec_sources[i][0] in s1['ra']) or (ra_dec_sources[i][1] in s1['dec']):
+#         good_indices.append(i)
+
+# good_indices = []
+# for i in range(len(sources)):
+#     # if (sources['xcentroid'][i] in s1['ra']) or (sources['ycentroid'][i] in s1['dec']):
+#     if (sources['xcentroid'][i] <= s1['ra'] + 0.01) or (sources['xcentroid'][i] <= s1['ra'] - 0.01):
+#         good_indices.append(i)
+# print(good_indices)
+
+
+#%%
+
+
+sources['xcentroid'] == sources['xcentroid'][min_index]
+sources['ycentroid'] == sources['ycentroid'][min_index]
+print(sources)
+
+#%%
+
+# s1['flux'] = 10**(- sm_sources['MOA_R_est'] / 2.5 )
+# zp = s2['MOA_R_est'].values - s1['flux']
+# zp = s2['MOA_R_est'].values - s1['fluxes']
+zp = s2['MOA_R_est'].values - phot_table['flux']
+
+zp = s2['MOA_R_est'].values - sources['flux']
+
+#%%
+
 # setting zero point and adjusting magnitudes
 # Magnitude zero point is arbitrary
 ZP = 30
-phot_table['mag'] = ZP - 2.5*np.log10(phot_table['flux'])
+phot_table['mag'] = ZP - 2.5*np.log10(sources['flux'])
 
 print(phot_table)
 #%%

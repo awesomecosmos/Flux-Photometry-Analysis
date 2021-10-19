@@ -59,17 +59,32 @@ def get_bkg_info(data):
 
 def postions_and_apertures(sources):
     # creating list of sources
-    positions = (sources['xcentroid'], sources['ycentroid'])
-    the_lst = []
-    x_vals = sources['xcentroid']
-    y_vals = sources['ycentroid']
-    for index in range(len(x_vals)):
-        to_return = (x_vals[index],y_vals[index])
-        the_lst.append(to_return)
+    try:
+        positions = (sources['xcentroid'], sources['ycentroid'])
+        the_lst = []
+        x_vals = sources['xcentroid']
+        y_vals = sources['ycentroid']
+        for index in range(len(x_vals)):
+            to_return = (x_vals[index],y_vals[index])
+            the_lst.append(to_return)
     
-    positions = (sources['xcentroid'], sources['ycentroid'])
-    apertures = CircularAperture(the_lst, r=20.0)
-    positions = the_lst
+        positions = (sources['xcentroid'], sources['ycentroid'])
+        apertures = CircularAperture(the_lst, r=20.0)
+        positions = the_lst
+    
+    except KeyError:
+        positions = (sources['ra'], sources['dec'])
+        the_lst = []
+        x_vals = sources['ra']
+        y_vals = sources['dec']
+        for index in range(len(x_vals)):
+            to_return = (x_vals.to_numpy()[index],y_vals.to_numpy()[index])
+            the_lst.append(to_return)
+    
+        positions = (sources['ra'], sources['dec'])
+        apertures = CircularAperture(the_lst, r=20.0)
+        positions = the_lst
+
     return apertures, positions
 
 
