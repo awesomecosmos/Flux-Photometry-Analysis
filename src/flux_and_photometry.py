@@ -126,36 +126,6 @@ sm_sources = skymapper_sources(my_target_coords)
 R_estimates = R_fit.estimate_mag(mags = sm_sources)
 sm_sources['MOA_R_est'] = R_estimates
 
-#%%
-
-def sm_to_moa_transform(sm_sources,moa_sources):
-    s2 = deepcopy(sm_sources)
-    
-    dra = moa_sources['xcentroid'][:,np.newaxis] - s2['ra'].values[np.newaxis,:]
-    ddec = moa_sources['ycentroid'][:,np.newaxis] - s2['dec'].values[np.newaxis,:]
-    dist = np.sqrt(dra**2 + ddec**2)
-    min_value = np.nanmin(dist,axis=0)
-    min_index = np.argmin(dist,axis=0)
-
-    t1 = moa_sources[min_index]
-    
-    good_indices = []
-    for i in range(len(t1)):
-        if np.abs(t1['xcentroid'][0] - s2['ra'].values[0]) >= min_value[i]:
-            good_indices.append(i)
-
-    new_t1 = t1[good_indices]
-    new_s2 = s2.iloc[good_indices]
-
-    zp = new_s2['MOA_R_est'].values - new_t1['flux']
-    
-    # converting flux to mag
-    for i in range(len(new_t1)):
-        new_t1['mag'] = zp[i] - 2.5*np.log10(new_t1['flux'])
-    final_calibrated_mags = new_s2['MOA_R_est'].values - new_t1['mag']
-    
-    return new_t1, new_s2, zp, final_calibrated_mags
-
 new_t1, new_s2, zp, final_calibrated_mags = sm_to_moa_transform(sm_sources,moa_sources)
 
 #%%
