@@ -218,6 +218,7 @@ plt.title("Calibrated Zero Points of Sources")
 plt.show()
 
 #%%
+# converting flux to mag
 for i in range(len(new_t1)):
     new_t1['mag'] = zp[i] - 2.5*np.log10(new_t1['flux'])
     
@@ -236,7 +237,7 @@ plt.title("Calibrated Apparent Magnitudes of Sources")
 plt.show()
 
 #%%
-final_calibrated_mags = new_t1['mag'] - new_s2['MOA_R_est'].values
+final_calibrated_mags = new_s2['MOA_R_est'].values - new_t1['mag']
 
 plt.hist(final_calibrated_mags,bins=50,color="darkviolet")
 plt.grid("both")
@@ -246,3 +247,9 @@ plt.title("Final Calibrated Magnitudes of Sources")
 plt.show()
 
 #%%
+plt.figure()
+plt.plot(new_s2['g']-new_s2['r'],final_calibrated_mags,'.',color="darkviolet")
+plt.xlabel("g-r")
+plt.ylabel("magnitudes")
+plt.grid("both")
+plt.title("(g-r) vs magnitudes")
