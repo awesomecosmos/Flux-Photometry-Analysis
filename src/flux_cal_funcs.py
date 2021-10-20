@@ -163,8 +163,10 @@ def comet_ang_size(distance_to_comet_au,diameter=10000):
         Angular size of comet, in arcseconds.
     """
     distance_to_comet_km = distance_to_comet_au * (1.5 * 10**8)
-    ang_size_deg = diameter / distance_to_comet_km 
+    ang_size_rad = diameter / distance_to_comet_km 
+    ang_size_deg = ang_size_rad * (180 / np.pi)
     ang_size_arcsec = ang_size_deg * 60 * 60
+    
     return ang_size_arcsec
 
 def arcsec_to_pixel(arcsec_diameter):
@@ -274,21 +276,21 @@ def plotting_funcs_flux_cal(img_name,sm_sources,zp,new_t1,new_s2,
     plt.savefig(outputs_path/"cal_zp-{}.jpeg".format(img_name),dpi=900)
     plt.show()
             
-    plt.hist(new_t1['mag'],bins=100,color="darkviolet")
-    plt.grid("both")
-    plt.xlabel("apparent magnitudes")
-    plt.ylabel("frequency")
-    plt.title("Calibrated Apparent Magnitudes of Sources")
-    plt.savefig(outputs_path/"hist_cal_mags-{}.jpeg".format(img_name),dpi=900)
-    plt.show()
+    # plt.hist(new_t1['mag'],bins=100,color="darkviolet")
+    # plt.grid("both")
+    # plt.xlabel("apparent magnitudes")
+    # plt.ylabel("frequency")
+    # plt.title("Calibrated Apparent Magnitudes of Sources")
+    # plt.savefig(outputs_path/"hist_cal_mags-{}.jpeg".format(img_name),dpi=900)
+    # plt.show()
         
-    plt.plot(new_t1['flux'],new_t1['mag'],'.',color="darkviolet")
-    plt.grid("both")
-    plt.xlabel("flux")
-    plt.ylabel("magnitude")
-    plt.title("Calibrated Apparent Magnitudes of Sources")
-    plt.savefig(outputs_path/"flux_vs_cal_mags-{}.jpeg".format(img_name),dpi=900)
-    plt.show()
+    # plt.plot(new_t1['flux'],new_t1['mag'],'.',color="darkviolet")
+    # plt.grid("both")
+    # plt.xlabel("flux")
+    # plt.ylabel("magnitude")
+    # plt.title("Calibrated Apparent Magnitudes of Sources")
+    # plt.savefig(outputs_path/"flux_vs_cal_mags-{}.jpeg".format(img_name),dpi=900)
+    # plt.show()
         
     plt.hist(final_calibrated_mags,bins=50,color="darkviolet")
     plt.grid("both")

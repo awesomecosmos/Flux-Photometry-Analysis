@@ -17,6 +17,9 @@ from astropy.coordinates import SkyCoord
 from astropy.stats import sigma_clipped_stats
 from astropy.visualization import SqrtStretch, simple_norm
 from astropy.visualization.mpl_normalize import ImageNormalize
+from astropy.io import fits
+from astropy import wcs
+from astropy.nddata import Cutout2D
 
 # importing photutils packages
 from photutils.aperture import SkyCircularAperture
@@ -62,7 +65,7 @@ all_mags = []
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 # reading in image files from Reduced ALERTS folder
-images_path = Path("//spcsfs/ave41/astro/ave41/ObsData-2021-02-11/ALERT/Reduced ALERT/WCS Calibrated/Sidereally Stacked Images")
+images_path = Path("//spcsfs/ave41/astro/ave41/ObsData-2021-02-18/ALERT/Reduced ALERT/WCS Calibrated/Sidereally Stacked Images")
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # ++++++++++++++++++++++++++++++++CHANGES++++++++++++++++++++++++++++++++++++++
@@ -72,17 +75,17 @@ outputs_path = path_checker(images_path,'Flux and Photometry Outputs')
 
 # filtering data files
 # for proper image list
-lst_of_images = [str(images_path) +"/" + n 
-                  for n in os.listdir(images_path) if (n.endswith('fit')) and n.__contains__('-aligned-')]
-image_names = [n for n in os.listdir(images_path) if (n.endswith('fit')) and n.__contains__('-aligned-')]
+# lst_of_images = [str(images_path) +"/" + n 
+#                   for n in os.listdir(images_path) if (n.endswith('fit')) and n.__contains__('-aligned-')]
+# image_names = [n for n in os.listdir(images_path) if (n.endswith('fit')) and n.__contains__('-aligned-')]
 
 # for temp testing purposes
-# temp_short_lst = [str(images_path) +"/" + n 
-#                    for n in os.listdir(images_path) if (n.endswith('fits')) and n.__contains__('-aligned-')]
+temp_short_lst = [str(images_path) +"/" + n 
+                    for n in os.listdir(images_path) if (n.endswith('fits')) and n.__contains__('-aligned-')]
 
-# temp_image_names = [n for n in os.listdir(images_path) if (n.endswith('fits')) and n.__contains__('-aligned-')]
-# lst_of_images = [temp_short_lst[0]] #temp_short_lst[:2] #
-# image_names =  [temp_image_names[0]] #temp_image_names[:2]
+temp_image_names = [n for n in os.listdir(images_path) if (n.endswith('fits')) and n.__contains__('-aligned-')]
+lst_of_images = [temp_short_lst[0]] #temp_short_lst[:2] #
+image_names =  [temp_image_names[0]] #temp_image_names[:2]
 
 
 
@@ -145,7 +148,7 @@ for i in range(len(lst_of_images)):
     plt.title("Estimated Magnitudes of Sources in MOA-R")
     # plt.savefig(outputs_path/"est_mags-{}.jpeg".format(img_name),dpi=900)
     plt.show()
-    
+ #%%    
     
     def sm_to_moa_transform(sm_sources,moa_sources):
         s2 = deepcopy(sm_sources)
@@ -192,7 +195,7 @@ for i in range(len(lst_of_images)):
         return new_t1, new_s2, zp, final_calibrated_mags
     
     new_t1, new_s2, zp, final_calibrated_mags = sm_to_moa_transform(sm_sources,moa_sources)
-    
+ #%%   
     plt.hist(final_calibrated_mags,color="darkviolet")
     plt.grid("both")
     plt.xlabel("apparent magnitudes")
@@ -204,11 +207,11 @@ for i in range(len(lst_of_images)):
     # PLOTS
     # plotting_funcs_flux_cal(image_names,sm_sources,zp,new_t1,new_s2,
     #                             final_calibrated_mags,outputs_path)
-    plotting_funcs_flux_cal(image_names[i],sm_sources,zp,new_t1,new_s2,
+    plotting_funcs_flux_cal(image_names,sm_sources,zp,new_t1,new_s2,
                                 final_calibrated_mags,outputs_path)
     
     #---------------------SECTION SIX: COMET PHOTOMETRY---------------------------#
-    
+    #%%
     # do jpl horizons stuff here to find coords of comet
     t = Time(obsDate, format='fits', scale='utc')
     jd_obsDate = t.jd
@@ -224,7 +227,7 @@ for i in range(len(lst_of_images)):
     comet_actual_dec = jpl_data['DEC'][0]
     comet_geocentric_distance = jpl_data['delta'][0] #au
     ## do conversion stuff here if needed
-    
+    #%%
     # now need to check if ra/dec in new_t1 and new_s2 match this bad boi
     new_t1_ra_match = np.where(comet_actual_ra == new_t1['xcentroid'])
     new_s2_ra_match = np.where(comet_actual_ra == new_s2['ra'])
@@ -258,16 +261,16 @@ for i in range(len(lst_of_images)):
     new_s3 = s3.iloc[good_indices]
     
     
-    
+ #%%   
     # calculating arcsec size of comet to use for FWHM/aperture ring size
-    epoch_comet_ang_size = comet_ang_size(comet_geocentric_distance,diameter=10000) # arcsec
+    epoch_comet_ang_size = comet_ang_size(comet_geocentric_distance,diameter=20000) # arcsec
     fwhm_radius_in_pixels = arcsec_to_pixel(epoch_comet_ang_size)
     
     mean, median, std = sigma_clipped_stats(data, sigma=3.0)   
     bkg = get_bkg_info(data) 
-    daofind = DAOStarFinder(fwhm=fwhm_radius_in_pixels*2, threshold=5.*std)    
+    daofind = DAOStarFinder(fwhm=fwhm_radius_in_pixels, threshold=5.*std)    
     sources = daofind(data - median)
-    
+    #%%
     moa_sources = pixels_to_ra_dec(lst_of_images[0],sources)
     
     closest_ra_value_to_comet = min(range(len(moa_sources['xcentroid'])), 
@@ -276,13 +279,17 @@ for i in range(len(lst_of_images)):
                                      key=lambda i: abs(moa_sources['ycentroid'][i]-comet_actual_dec))
     
     
-    
+    print(comet_actual_ra,comet_actual_dec)
     moa_mag = moa_sources['mag'][closest_ra_value_to_comet]
     
     mag_of_comet = moa_mag + np.nanmean(zp)
     
     mags_of_comet.append(mag_of_comet)
     obsDates.append(obsDate)
+
+
+# comet_actual_ra
+# comet_actual_dec
 
 
 
@@ -295,38 +302,95 @@ plt.title("Brightness Variation in Observations of {}".format(target_name))
 plt.show()
 
 
-all_mags.append([obsDates,mags_of_comet])
+# all_mags.append([obsDates,mags_of_comet])
 
 
 #%%
 
-for i in all_mags:
-    plt.plot(i[0],i[1],'.')
-    plt.grid("both")
+# for i in all_mags:
+#     plt.plot(i[0],i[1],'.')
+#     plt.grid("both")
+# #%%
+
+# fig, ax = plt.subplots(figsize=(15, 15))
+
+# for i in all_mags:
+#     ax.plot(i[0],i[1],'.',label=i[0][1][:10])
+# ax.grid("both")
+# ax.invert_xaxis()
+# plt.xticks(rotation=90)
+# plt.legend()
+# plt.xlabel("epoch")
+# plt.ylabel("apparent magnitude")
+# plt.title("Light Curve of C/2021 A7")
+# plt.savefig("final_lightcurve.jpeg")
+
+
 #%%
 
-fig, ax = plt.subplots(figsize=(15, 15))
+f = fits.open(lst_of_images[0])
+w = wcs.WCS(f[0].header)
+newf = fits.PrimaryHDU()
+#%%
+newf.data = f[0].data[100:-100,100:-100]
+newf.header = f[0].header
+newf.header.update(w[100:-100,100:-100].to_header())
 
-for i in all_mags:
-    ax.plot(i[0],i[1],'.',label=i[0][1][:10])
-ax.grid("both")
-ax.invert_xaxis()
-plt.xticks(rotation=90)
-plt.legend()
-plt.xlabel("epoch")
-plt.ylabel("apparent magnitude")
-plt.title("Light Curve of C/2021 A7")
-plt.savefig("final_lightcurve.jpeg")
+#%%
 
 
+comet_pixel_location_x = 1151
+comet_pixel_location_y = 2344
+
+position = (comet_pixel_location_x, comet_pixel_location_y)
+shape = (100, 100)
+cutout = Cutout2D(f[0].data, position, shape, wcs=w)
+
+ # norm = simple_norm(data, 'sqrt', percent=96) # another way to "stretch" the image display
+ #    plt.imshow(data, norm=norm,origin='lower')
+norm = simple_norm(cutout.data, 'sqrt', percent=96)
+plt.imshow(cutout.data, norm=norm, origin='lower')
+
+#%%
+f.data = cutout.data
+
+# Update the FITS header with the cutout WCS
+f[0].header.update(cutout.wcs.to_header())
+
+# Write the cutout to a new FITS file
+cutout_filename = 'example_cutout.fits'
+f.writeto(outputs_path/cutout_filename, overwrite=True)
+
+cutout_img = '//spcsfs/ave41/astro/ave41/ObsData-2021-02-18/ALERT/Reduced ALERT/WCS Calibrated/Sidereally Stacked Images/Flux and Photometry Outputs/example_cutout.fits'
+
+#%%
+epoch_comet_ang_size = comet_ang_size(comet_geocentric_distance,diameter=20000) # arcsec
+fwhm_radius_in_pixels = arcsec_to_pixel(epoch_comet_ang_size)
+#%%
+mean, median, std = sigma_clipped_stats(cutout.data, sigma=3.0)   
+bkg = get_bkg_info(cutout.data) 
+daofind = DAOStarFinder(fwhm=fwhm_radius_in_pixels, threshold=5.*std)    
+sources = daofind(cutout.data - median)
+#%%
+comet_sources = pixels_to_ra_dec(cutout_img,sources)
+comet_index = np.argmax(comet_sources['flux'])
+comet_max_flux = comet_sources['flux'][comet_index]
+
+#%%
+# closest_ra_value_to_comet = min(range(len(comet_sources['xcentroid'])), 
+#                                 key=lambda i: abs(moa_sources['xcentroid'][i]-comet_actual_ra))
+# closest_dec_value_to_comet = min(range(len(moa_sources['ycentroid'])), 
+#                                  key=lambda i: abs(moa_sources['ycentroid'][i]-comet_actual_dec))
 
 
+# print(comet_actual_ra,comet_actual_dec)
+moa_mag = comet_sources['mag'][comet_index]
 
+mag_of_comet = moa_mag + np.nanmedian(zp)
+print("mag_of_comet: ",mag_of_comet)
 
-
-
-
-
+mags_of_comet.append(mag_of_comet)
+obsDates.append(obsDate)
 
 
     
