@@ -54,13 +54,15 @@ from flux_cal_funcs import *
 ###############################################################################
 #----------------------SECTION ONE: INITIALISATION----------------------------#
 ###############################################################################
-
+#%%
+all_mags = []
+#%%
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # ++++++++++++++++++++++++++++++++CHANGES++++++++++++++++++++++++++++++++++++++
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 # reading in image files from Reduced ALERTS folder
-images_path = Path("//spcsfs/ave41/astro/ave41/ObsData-2021-02-18/ALERT/Reduced ALERT/WCS Calibrated/Sidereally Stacked Images")
+images_path = Path("//spcsfs/ave41/astro/ave41/ObsData-2021-02-11/ALERT/Reduced ALERT/WCS Calibrated/Sidereally Stacked Images")
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # ++++++++++++++++++++++++++++++++CHANGES++++++++++++++++++++++++++++++++++++++
@@ -70,47 +72,50 @@ outputs_path = path_checker(images_path,'Flux and Photometry Outputs')
 
 # filtering data files
 # for proper image list
-# lst_of_images = [str(images_path) +"/" + n 
-#                   for n in os.listdir(images_path) if (n.endswith('fits')) and n.__contains__('-aligned-')]
-# image_names = [n for n in os.listdir(images_path) if (n.endswith('fits')) and n.__contains__('-aligned-')]
+lst_of_images = [str(images_path) +"/" + n 
+                  for n in os.listdir(images_path) if (n.endswith('fit')) and n.__contains__('-aligned-')]
+image_names = [n for n in os.listdir(images_path) if (n.endswith('fit')) and n.__contains__('-aligned-')]
 
 # for temp testing purposes
-temp_short_lst = [str(images_path) +"/" + n 
-                   for n in os.listdir(images_path) if (n.endswith('fits')) and n.__contains__('-aligned-')]
+# temp_short_lst = [str(images_path) +"/" + n 
+#                    for n in os.listdir(images_path) if (n.endswith('fits')) and n.__contains__('-aligned-')]
 
-temp_image_names = [n for n in os.listdir(images_path) if (n.endswith('fits')) and n.__contains__('-aligned-')]
-lst_of_images = [temp_short_lst[0]] #temp_short_lst[:2] #
-image_names =  [temp_image_names[0]] #temp_image_names[:2]
+# temp_image_names = [n for n in os.listdir(images_path) if (n.endswith('fits')) and n.__contains__('-aligned-')]
+# lst_of_images = [temp_short_lst[0]] #temp_short_lst[:2] #
+# image_names =  [temp_image_names[0]] #temp_image_names[:2]
 
 
-#%%
+
 obsDates = []
+
 mags_of_comet = []
 target_name = 'C/2021 A7'
+
+
 for i in range(len(lst_of_images)):
 # i = 0
     # Read the image
     data, hdr = fits.getdata(lst_of_images[i], header=True)
     with fits.open(lst_of_images[i], "append") as img_hdul:
-        img_hdr1 = img_hdul[i].header
+        img_hdr1 = img_hdul[0].header
         target_ra = img_hdr1['RA      '].strip(' ')
         target_dec = img_hdr1['DEC     '].strip(' ')
         obsDate = '20' + img_hdr1['DATE    '].strip(' ')
         target_location = '474'
         my_target_coords = [str(target_ra) + " " + str(target_dec)]
-    #%%
+    
     #--------------------SECTION TWO: BACKGROUND DETECTION------------------------#
     
     # Estimate the sky background level and its standard deviation
     mean, median, std = sigma_clipped_stats(data, sigma=3.0)   
     bkg = get_bkg_info(data) 
-    #%%
+    
     #---------------------SECTION THREE: SOURCE DETECTION-------------------------#
     
     # Start up the DAOStarFinder object and detect stars
     daofind = DAOStarFinder(fwhm=3.0, threshold=5.*std)    
     moa_sources = daofind(data - median)
-    #%%
+    
     #------------------------SECTION FOUR: APERTURES------------------------------#
     
     apertures, positions = postions_and_apertures(moa_sources)
@@ -120,10 +125,10 @@ for i in range(len(lst_of_images)):
     # inner and outer radii of 10 and 15 pixels.
     apertures = CircularAperture(positions, r=5)
     annulus_apertures = CircularAnnulus(positions, r_in=10, r_out=15)
-    #%%
+    
     #---------------------SECTION FIVE: FLUX CALIBRATION--------------------------#
     
-    moa_sources = pixels_to_ra_dec(lst_of_images[i],moa_sources)
+    moa_sources = pixels_to_ra_dec(lst_of_images[0],moa_sources)
     
     # RYAN'S CODE
     R_filter = 'moared.txt' #wavelengths, ?
@@ -133,7 +138,15 @@ for i in range(len(lst_of_images)):
     R_estimates = R_fit.estimate_mag(mags = sm_sources)
     sm_sources['MOA_R_est'] = R_estimates
     
-    #%%
+    plt.hist(R_estimates,bins=50,color="darkviolet")
+    plt.grid("both")
+    plt.xlabel("apparent magnitudes")
+    plt.ylabel("frequency")
+    plt.title("Estimated Magnitudes of Sources in MOA-R")
+    # plt.savefig(outputs_path/"est_mags-{}.jpeg".format(img_name),dpi=900)
+    plt.show()
+    
+    
     def sm_to_moa_transform(sm_sources,moa_sources):
         s2 = deepcopy(sm_sources)
         
@@ -153,46 +166,47 @@ for i in range(len(lst_of_images)):
         # MOA and SM source lists are now filtered to only include the matching sources
         new_t1 = t1[good_indices]
         new_s2 = s2.iloc[good_indices]
-        
+        # print(new_t1['flux'][0])
         
         # !! I THINK THIS IS WHERE SOMETHING IS GOING WRONG !! #
         
-        # calculating zero point
-        zp = new_s2['MOA_R_est'].values - new_t1['flux']
-        # zp = new_t1['flux'] - new_s2['MOA_R_est'].values
+        zp = new_s2['MOA_R_est'].values - new_t1['mag']
+         
+        # m_moa = (-1.25 * np.log10(new_t1['flux'])) + new_s2['MOA_R_est'].values
         
-        # converting flux to mag
-        for i in range(len(new_t1)):
-            new_t1['mag'] = zp[i] - (2.5 * np.log10(new_t1['flux']))
+        m_moa = (-2.5 * np.log10(new_t1['flux'].data)) + zp
         
-        # final_calibrated_mags = new_s2['MOA_R_est'].values - new_t1['mag'] #initially a -ve but chnaged to a +ve?
-        final_calibrated_mags = new_s2['MOA_R_est'].values - new_t1['mag']
+        print(m_moa)
+        final_calibrated_mags = m_moa
+        # # calculating zero point
+        # zp = new_s2['MOA_R_est'].values - m_moa
+        # # zp = new_t1['flux'] - new_s2['MOA_R_est'].values
+        
+        # # converting flux to mag
+        # for i in range(len(new_t1)):
+        #     new_t1['mag'] = zp[i] - (2.5 * np.log10(new_t1['flux']))
+        
+        # # final_calibrated_mags = new_s2['MOA_R_est'].values - new_t1['mag'] #initially a -ve but chnaged to a +ve?
+        # final_calibrated_mags = new_s2['MOA_R_est'].values - new_t1['mag']
         
         return new_t1, new_s2, zp, final_calibrated_mags
     
     new_t1, new_s2, zp, final_calibrated_mags = sm_to_moa_transform(sm_sources,moa_sources)
     
-    plt.hist(final_calibrated_mags,bins=50,color="darkviolet")
+    plt.hist(final_calibrated_mags,color="darkviolet")
     plt.grid("both")
     plt.xlabel("apparent magnitudes")
     plt.ylabel("frequency")
     plt.title("Final Calibrated Magnitudes of Sources")
     # plt.savefig(outputs_path/"final_cal_mags-{}.jpeg".format(img_name),dpi=900)
     plt.show()
-    #%%
-    zp_no_nan = []
-    for i in zp:
-        if np.isnan(i):
-            pass
-        else:
-          zp_no_nan.append(i)  
-    #%%
+    
     # PLOTS
     # plotting_funcs_flux_cal(image_names,sm_sources,zp,new_t1,new_s2,
     #                             final_calibrated_mags,outputs_path)
-    plotting_funcs_flux_cal(image_names,sm_sources,zp,new_t1,new_s2,
+    plotting_funcs_flux_cal(image_names[i],sm_sources,zp,new_t1,new_s2,
                                 final_calibrated_mags,outputs_path)
-    #%%
+    
     #---------------------SECTION SIX: COMET PHOTOMETRY---------------------------#
     
     # do jpl horizons stuff here to find coords of comet
@@ -218,12 +232,12 @@ for i in range(len(lst_of_images)):
     
     # # do same for dec
     
-    #%%
+    
     new_t1_ra_match = np.where(comet_actual_ra == new_t1['xcentroid'])
     new_s2_ra_match = np.where(comet_actual_ra == new_s2['ra'])
     print(new_t1_ra_match == new_s2_ra_match)
     
-    #%%
+    
     
     s3 = deepcopy(new_s2)
     
@@ -242,13 +256,8 @@ for i in range(len(lst_of_images)):
         
     new_t2 = t2[good_indices]
     new_s3 = s3.iloc[good_indices]
-        
-    #%%
-    plt.plot(zp_no_nan,'.')
-    plt.show()
-    print(np.mean(zp_no_nan))
     
-    #%%
+    
     
     # calculating arcsec size of comet to use for FWHM/aperture ring size
     epoch_comet_ang_size = comet_ang_size(comet_geocentric_distance,diameter=10000) # arcsec
@@ -258,9 +267,9 @@ for i in range(len(lst_of_images)):
     bkg = get_bkg_info(data) 
     daofind = DAOStarFinder(fwhm=fwhm_radius_in_pixels*2, threshold=5.*std)    
     sources = daofind(data - median)
-    #%%
+    
     moa_sources = pixels_to_ra_dec(lst_of_images[0],sources)
-    #%%
+    
     closest_ra_value_to_comet = min(range(len(moa_sources['xcentroid'])), 
                                     key=lambda i: abs(moa_sources['xcentroid'][i]-comet_actual_ra))
     closest_dec_value_to_comet = min(range(len(moa_sources['ycentroid'])), 
@@ -268,12 +277,14 @@ for i in range(len(lst_of_images)):
     
     
     
-    mag_of_comet = moa_sources['mag'][closest_ra_value_to_comet]
+    moa_mag = moa_sources['mag'][closest_ra_value_to_comet]
+    
+    mag_of_comet = moa_mag + np.nanmean(zp)
     
     mags_of_comet.append(mag_of_comet)
     obsDates.append(obsDate)
 
-#%%
+
 
 plt.plot(obsDates,mags_of_comet,'.',color="darkviolet")
 # plt.plot(mags_of_comet,'.',color="darkviolet")
@@ -282,6 +293,35 @@ plt.xlabel("epoch")
 plt.ylabel("apparent magnitude")
 plt.title("Brightness Variation in Observations of {}".format(target_name))
 plt.show()
+
+
+all_mags.append([obsDates,mags_of_comet])
+
+
+#%%
+
+for i in all_mags:
+    plt.plot(i[0],i[1],'.')
+    plt.grid("both")
+#%%
+
+fig, ax = plt.subplots(figsize=(15, 15))
+
+for i in all_mags:
+    ax.plot(i[0],i[1],'.',label=i[0][1][:10])
+ax.grid("both")
+ax.invert_xaxis()
+plt.xticks(rotation=90)
+plt.legend()
+plt.xlabel("epoch")
+plt.ylabel("apparent magnitude")
+plt.title("Light Curve of C/2021 A7")
+plt.savefig("final_lightcurve.jpeg")
+
+
+
+
+
 
 
 

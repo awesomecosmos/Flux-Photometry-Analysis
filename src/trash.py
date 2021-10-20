@@ -42,7 +42,7 @@ from glob import glob
 from pathlib import Path
 
 # initialising starting directory
-code_home_path = "C:/Users/ave41/OneDrive - University of Canterbury/MSc Astronomy/MSc 2021/ASTR480 Research/ASTR480 Code/01 Data Reduction Pipeline/DataReductionPipeline/src"
+code_home_path = "C:/Users/ave41/OneDrive - University of Canterbury/ASTR480 Research/ASTR480 Code/01 Data Reduction Pipeline/DataReductionPipeline/src"
 os.chdir(code_home_path) #from now on, we are in this directory
 
 # importing functions
@@ -50,11 +50,11 @@ from drp_funcs import *
 from asp_funcs import *
 
 # initialising starting directory
-code_home_path = "C:/Users/ave41/OneDrive - University of Canterbury/MSc Astronomy/MSc 2021/ASTR480 Research/ASTR480 Code/02 Data Analysis/Flux-Photometry-Analysis/src"
+code_home_path = "C:/Users/ave41/OneDrive - University of Canterbury/ASTR480 Research/ASTR480 Code/02 Data Analysis/Flux-Photometry-Analysis/src"
 os.chdir(code_home_path) #from now on, we are in this directory
 
 # importing functions
-from flux_and_photometry_funcs import *
+from flux_cal_funcs import *
 
 ###############################################################################
 #----------------------SECTION ONE: INITIALISATION----------------------------#
@@ -65,7 +65,7 @@ from flux_and_photometry_funcs import *
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 # reading in image files from Reduced ALERTS folder
-images_path = Path("//spcsfs/ave41/astro/ave41/ObsData-2021-02-13/ALERT/Reduced ALERT/WCS Calibrated/Sidereally Stacked Images")
+images_path = Path("//spcsfs/ave41/astro/ave41/ObsData-2021-02-18/ALERT/Reduced ALERT/WCS Calibrated/Sidereally Stacked Images")
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # ++++++++++++++++++++++++++++++++CHANGES++++++++++++++++++++++++++++++++++++++
@@ -73,10 +73,10 @@ images_path = Path("//spcsfs/ave41/astro/ave41/ObsData-2021-02-13/ALERT/Reduced 
 
 # filtering data files
 lst_of_images = [str(images_path) +"/" + n 
-                  for n in os.listdir(images_path) if (n.endswith('fit')) and n.__contains__('-aligned-')]
+                  for n in os.listdir(images_path) if (n.endswith('fits')) and n.__contains__('-aligned-')]
 
 # filtering data files
-image_names = [n for n in os.listdir(images_path) if (n.endswith('fit')) and n.__contains__('-aligned-')]
+image_names = [n for n in os.listdir(images_path) if (n.endswith('fits')) and n.__contains__('-aligned-')]
 
 # lst_of_images = []
 # for n in os.listdir(images_path):
