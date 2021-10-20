@@ -154,13 +154,16 @@ for i in range(len(lst_of_images)):
         new_t1 = t1[good_indices]
         new_s2 = s2.iloc[good_indices]
         
+        
+        # !! I THINK THIS IS WHERE SOMETHING IS GOING WRONG !! #
+        
         # calculating zero point
         zp = new_s2['MOA_R_est'].values - new_t1['flux']
         # zp = new_t1['flux'] - new_s2['MOA_R_est'].values
         
         # converting flux to mag
         for i in range(len(new_t1)):
-            new_t1['mag'] = zp[i] - (2.5*np.log10(new_t1['flux']))
+            new_t1['mag'] = zp[i] - (2.5 * np.log10(new_t1['flux']))
         
         # final_calibrated_mags = new_s2['MOA_R_est'].values - new_t1['mag'] #initially a -ve but chnaged to a +ve?
         final_calibrated_mags = new_s2['MOA_R_est'].values - new_t1['mag']
@@ -169,8 +172,13 @@ for i in range(len(lst_of_images)):
     
     new_t1, new_s2, zp, final_calibrated_mags = sm_to_moa_transform(sm_sources,moa_sources)
     
-    plotting_funcs_flux_cal(image_names,sm_sources,zp,new_t1,new_s2,
-                                final_calibrated_mags,outputs_path)
+    plt.hist(final_calibrated_mags,bins=50,color="darkviolet")
+    plt.grid("both")
+    plt.xlabel("apparent magnitudes")
+    plt.ylabel("frequency")
+    plt.title("Final Calibrated Magnitudes of Sources")
+    # plt.savefig(outputs_path/"final_cal_mags-{}.jpeg".format(img_name),dpi=900)
+    plt.show()
     #%%
     zp_no_nan = []
     for i in zp:
