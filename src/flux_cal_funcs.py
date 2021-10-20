@@ -34,7 +34,7 @@ import calibrimbore as cal
 from copy import deepcopy
 
 # initialising starting directory
-code_home_path = "C:/Users/ave41/OneDrive - University of Canterbury/MSc Astronomy/MSc 2021/ASTR480 Research/ASTR480 Code/01 Data Reduction Pipeline/DataReductionPipeline/src"
+code_home_path = "C:/Users/ave41/OneDrive - University of Canterbury/ASTR480 Research/ASTR480 Code/01 Data Reduction Pipeline/DataReductionPipeline/src"
 os.chdir(code_home_path) #from now on, we are in this directory
 
 # importing functions
@@ -42,7 +42,7 @@ from drp_funcs import *
 from asp_funcs import *
 
 # initialising starting directory
-code_home_path = "C:/Users/ave41/OneDrive - University of Canterbury/MSc Astronomy/MSc 2021/ASTR480 Research/ASTR480 Code/02 Data Analysis/Flux-Photometry-Analysis/src"
+code_home_path = "C:/Users/ave41/OneDrive - University of Canterbury/ASTR480 Research/ASTR480 Code/02 Data Analysis/Flux-Photometry-Analysis/src"
 os.chdir(code_home_path) #from now on, we are in this directory
 
 ###############################################################################
@@ -118,14 +118,15 @@ def sm_to_moa_transform(sm_sources,moa_sources):
     dist = np.sqrt(dra**2 + ddec**2)
     min_value = np.nanmin(dist,axis=0)
     min_index = np.argmin(dist,axis=0)
-
-    t1 = moa_sources[min_index]
     
+    # finding closest sources to SM sources in MOA sources
+    t1 = moa_sources[min_index]
     good_indices = []
     for i in range(len(t1)):
         if np.abs(t1['xcentroid'][0] - s2['ra'].values[0]) >= min_value[i]:
             good_indices.append(i)
-
+    
+    # MOA and SM source lists are now filtered to only include the matching sources
     new_t1 = t1[good_indices]
     new_s2 = s2.iloc[good_indices]
     
@@ -137,9 +138,58 @@ def sm_to_moa_transform(sm_sources,moa_sources):
     for i in range(len(new_t1)):
         new_t1['mag'] = zp[i] - (2.5*np.log10(new_t1['flux']))
     
+    # final_calibrated_mags = new_s2['MOA_R_est'].values - new_t1['mag'] #initially a -ve but chnaged to a +ve?
     final_calibrated_mags = new_s2['MOA_R_est'].values - new_t1['mag']
     
     return new_t1, new_s2, zp, final_calibrated_mags
+
+def comet_ang_size(distance_to_comet_au,diameter=10000):
+    """
+    Function to calculate angular size of comet.
+    Uses formula D=r*theta, where D=diameter of comet, r=distance to comet,
+    theta=angular size of comet, in degrees.
+    
+    Parameters
+    ----------
+    distance_to_comet : float
+        Distance from Earth to comet, in au.
+    
+    diameter : int
+        Required diameter of comet, in km. Default of 10,000km.
+    
+    Returns
+    -------
+    ang_size : float
+        Angular size of comet, in arcseconds.
+    """
+    distance_to_comet_km = distance_to_comet_au * (1.5 * 10**8)
+    ang_size_deg = diameter / distance_to_comet_km 
+    ang_size_arcsec = ang_size_deg * 60 * 60
+    return ang_size_arcsec
+
+def arcsec_to_pixel(arcsec_diameter):
+    """
+    Function to convert the radius of a target (in arcsec) to the corresponding
+    radius (in pixels) for a MOA-cam3 CCD chip.
+
+    Parameters
+    ----------
+    arcsec_diameter : float
+        Diameter of target, in arcseconds.
+
+    Returns
+    -------
+    pixel_radius : float
+        Radius of target, in pixels correponding to a MOA-cam3 CCD chip.
+    """
+    arcsec_radius = arcsec_diameter / 2
+    # area of 1 pixel (pixel size) = (15 * 10 ** -6) m^2
+    pixel_size = 0.58 #arcsec squared
+    # dimensions of 1 pixel (assuming square pixel shape)
+    pixel_side = np.sqrt(pixel_size)
+    pixel_radius = arcsec_radius * pixel_side
+    
+    return pixel_radius
 
 ###############################################################################
 ###############################----PLOTS----###################################
