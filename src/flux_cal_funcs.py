@@ -85,16 +85,33 @@ def postions_and_apertures(sources):
         positions = (sources['ra'], sources['dec'])
         apertures = CircularAperture(the_lst, r=20.0)
         positions = the_lst
+    except:
+        positions = (phot_table['xcenter'].value, phot_table['ycenter'].value)
+        the_lst = []
+        x_vals = phot_table['xcenter'].value
+        y_vals = phot_table['ycenter'].value
+        for index in range(len(x_vals)):
+            to_return = (x_vals[index],y_vals[index])
+            the_lst.append(to_return)
+        positions = (phot_table['xcenter'].value, phot_table['ycenter'].value)
+        apertures = CircularAperture(the_lst, r=20.0)
+        positions = the_lst
     return apertures, positions
 
 def pixels_to_ra_dec(image,sources):
     f = fits.open(image)
     w = WCS(f[0].header)
     ra_dec_sources = []
-    for i in range(len(sources['xcentroid'])):
-        sky = w.pixel_to_world(sources['xcentroid'][i],sources['ycentroid'][i])
-        sources['xcentroid'][i] = (sky.ra * u.deg).value
-        sources['ycentroid'][i] = (sky.dec * u.deg).value
+    try:
+        for i in range(len(sources['xcentroid'])):
+            sky = w.pixel_to_world(sources['xcentroid'][i],sources['ycentroid'][i])
+            sources['xcentroid'][i] = (sky.ra * u.deg).value
+            sources['ycentroid'][i] = (sky.dec * u.deg).value
+    except:
+        for i in range(len(sources['xcenter'].value)):
+            sky = w.pixel_to_world(sources['xcenter'].value[i],sources['ycenter'].value[i])
+            sources['xcenter'].value[i] = (sky.ra * u.deg).value
+            sources['ycenter'].value[i] = (sky.dec * u.deg).value
     return sources
 
 def skymapper_sources(my_target_coords):
@@ -162,10 +179,10 @@ def comet_ang_size(distance_to_comet_au,diameter=10000):
     ang_size : float
         Angular size of comet, in arcseconds.
     """
-    distance_to_comet_km = distance_to_comet_au * (1.5 * 10**8)
-    ang_size_rad = diameter / distance_to_comet_km 
-    ang_size_deg = ang_size_rad * (180 / np.pi)
-    ang_size_arcsec = ang_size_deg * 60 * 60
+    distance_to_comet_m = distance_to_comet_au * (1.5 * 10**11) # metres
+    ang_size_rad = (diameter * 10**3) / distance_to_comet_m # radians
+    ang_size_deg = ang_size_rad * (180 / np.pi) # degrees
+    ang_size_arcsec = ang_size_deg * 60 * 60 # arcseconds
     
     return ang_size_arcsec
 
