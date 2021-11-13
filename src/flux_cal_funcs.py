@@ -215,6 +215,9 @@ def arcsec_to_pixel(arcsec_diameter):
 ###############################################################################
 
 def diagnostic_plots(data,image_name,apertures,annulus_apertures,ZP,phot_table,outputs_path):
+    
+    zp = np.round(np.nanmean(ZP),2)
+    
     # Display the image and overlay the apertures and anulli - zoom in to check that they are OK 
     plt.figure()
     norm = simple_norm(data, 'sqrt', percent=96) # another way to "stretch" the image display
@@ -224,7 +227,8 @@ def diagnostic_plots(data,image_name,apertures,annulus_apertures,ZP,phot_table,o
     annulus_apertures.plot(color='red', lw=2)
     plt.xlim(1500, 1600)
     plt.ylim(2000, 2100)
-    plt.title("Zoomed-In Apertures for {}".format(image_name))
+    # plt.title("Zoomed-In Apertures for {}".format(image_name))
+    plt.title("Zoomed-In Apertures")
     plt.savefig(outputs_path/"apertures-{}.jpeg".format(image_name),dpi=900)
     plt.show()
 
@@ -234,7 +238,8 @@ def diagnostic_plots(data,image_name,apertures,annulus_apertures,ZP,phot_table,o
     plt.grid(b=True,which='both',axis='both')
     plt.xlabel("Apparent Magnitude")
     plt.ylabel("Number of Stars")
-    plt.title("Histogram of Apparent Magnitudes for Stars with ZP {} for {}".format(ZP,image_name))
+    # plt.title("Histogram of Apparent Magnitudes for Stars with ZP {} for {}".format(np.nanmean(ZP),image_name))
+    plt.title("Histogram of Apparent Magnitudes for Stars with ZP {}".format(zp))
     plt.savefig(outputs_path/"mags_with_zp_for_{}.jpeg".format(image_name),dpi=900)
     plt.show()
     
@@ -242,7 +247,8 @@ def diagnostic_plots(data,image_name,apertures,annulus_apertures,ZP,phot_table,o
     plt.grid(b=True,which='both',axis='both')
     plt.xlabel("Flux")
     plt.ylabel("Apparent Magnitude")
-    plt.title("Flux vs Magnitude of Apertures for {}".format(image_name))
+    # plt.title("Flux vs Magnitude of Apertures for {}".format(image_name))
+    plt.title("Flux vs Magnitude of Apertures")
     plt.savefig(outputs_path/"flux_vs_mag_for_{}.jpeg".format(image_name),dpi=900)
     plt.show()
     
@@ -250,28 +256,29 @@ def diagnostic_plots(data,image_name,apertures,annulus_apertures,ZP,phot_table,o
     plt.grid(b=True,which='both',axis='both')
     plt.xlabel("Flux")
     plt.ylabel("frequency")
-    plt.title("Flux Values for {}".format(image_name))
+    # plt.title("Flux Values for {}".format(image_name))
+    plt.title("Flux Values")
     plt.savefig(outputs_path/"flux_vals_for_{}.jpeg".format(image_name),dpi=900)
     plt.show()
     
-    # getting S/N ratios
-    xcenter_sn_ratios = []
-    for i in phot_table['xcenter'].value:
-        xcenter_sn_ratios.append(i/np.sqrt(i))
+    # # getting S/N ratios
+    # xcenter_sn_ratios = []
+    # for i in phot_table['xcenter'].value:
+    #     xcenter_sn_ratios.append(i/np.sqrt(i))
        
-    ycenter_sn_ratios = []
-    for i in phot_table['ycenter'].value:
-        ycenter_sn_ratios.append(i/np.sqrt(i))
+    # ycenter_sn_ratios = []
+    # for i in phot_table['ycenter'].value:
+    #     ycenter_sn_ratios.append(i/np.sqrt(i))
     
-    plt.hist(xcenter_sn_ratios,label="xcenter",color="deeppink")
-    plt.grid(b=True,which='both',axis='both')
-    plt.hist(ycenter_sn_ratios,alpha=0.5,label="ycenter",color="darkviolet")
-    plt.title("S/N Ratios of Point Sources in {}".format(image_name))
-    plt.xlabel("S/N Ratio")
-    plt.ylabel("frequency")
-    plt.legend()
-    plt.savefig(outputs_path/"sn_ratio_hist_for_{}.jpeg".format(image_name),dpi=900)
-    plt.show()
+    # plt.hist(xcenter_sn_ratios,label="xcenter",color="deeppink",bins=10)
+    # plt.grid(b=True,which='both',axis='both')
+    # plt.hist(ycenter_sn_ratios,alpha=0.5,label="ycenter",color="darkviolet")
+    # plt.title("S/N Ratios of Point Sources in {}".format(image_name))
+    # plt.xlabel("S/N Ratio")
+    # plt.ylabel("frequency")
+    # plt.legend()
+    # plt.savefig(outputs_path/"sn_ratio_hist_for_{}.jpeg".format(image_name),dpi=900)
+    # plt.show()
     
 
 def plotting_funcs_flux_cal(img_name,sm_sources,zp,new_t1,new_s2,
