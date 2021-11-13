@@ -1,18 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Nov  9 09:39:09 2021
-
-@author: ave41
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Oct 21 16:20:23 2021
-
-@author: ave41
-"""
-
-# -*- coding: utf-8 -*-
 
 ###############################################################################
 #-------------------SECTION ZERO: IMPORTING PACKAGES--------------------------#
@@ -22,33 +8,25 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # importing astropy packages
+from astropy import wcs
 import astropy.units as u
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.time import Time
-from astropy.stats import SigmaClip
+from astropy.nddata import Cutout2D
 from astropy.coordinates import SkyCoord
-from astropy.stats import sigma_clipped_stats
+from astropy.convolution import Gaussian2DKernel
 from astropy.visualization import SqrtStretch, simple_norm
 from astropy.visualization.mpl_normalize import ImageNormalize
-from astropy.io import fits
-from astropy import wcs
-from astropy.nddata import Cutout2D
-from photutils.utils import calc_total_error
-from photutils.segmentation import SourceCatalog
-from photutils.segmentation import deblend_sources
-from photutils.segmentation import detect_threshold
-from photutils.segmentation import make_source_mask
-from astropy.convolution import Gaussian2DKernel
-from astropy.stats import gaussian_fwhm_to_sigma
-from photutils.segmentation import detect_sources
+from astropy.stats import SigmaClip, sigma_clipped_stats, gaussian_fwhm_to_sigma
 
 # importing photutils packages
+from photutils.utils import calc_total_error
 from photutils.aperture import SkyCircularAperture
-from photutils import CircularAperture, CircularAnnulus
-from photutils import DAOStarFinder, aperture_photometry
 from photutils.background import Background2D, MedianBackground
 from photutils.datasets import load_spitzer_image, load_spitzer_catalog
+from photutils import CircularAperture, CircularAnnulus, DAOStarFinder, aperture_photometry
+from photutils.segmentation import SourceCatalog, deblend_sources, detect_threshold, make_source_mask, detect_sources
 
 # misc packages
 from copy import deepcopy
