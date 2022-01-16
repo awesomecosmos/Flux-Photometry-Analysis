@@ -163,7 +163,6 @@ for i in range(len(lst_of_images)):
     
     #---------------------SECTION FIVE: FLUX CALIBRATION--------------------------#
     
-    # RYAN'S CODE
     R_filter = 'moared.txt' #wavelengths, ?
     R_fit = cal.sauron(band=R_filter,system='skymapper',gr_lims=[-.5,0.8],plot=False,cubic_corr=False)
     
@@ -178,7 +177,6 @@ for i in range(len(lst_of_images)):
     plt.title("Estimated Magnitudes of Sources in MOA-R")
     # plt.savefig(outputs_path/"est_mags-{}.jpeg".format(img_name),dpi=900)
     plt.show()
-     
     
     def sm_to_moa_transform(sm_sources,moa_sources):
         s2 = deepcopy(sm_sources)
@@ -196,16 +194,13 @@ for i in range(len(lst_of_images)):
             diff = np.abs(t1['xcenter'].value[j] - s2['ra'].values[j])
             if diff <= min_value[j]:
                 good_indices.append(j)
-        # print(good_indices)
-        # print(len(good_indices))
         
         # MOA and SM source lists are now filtered to only include the matching sources
         new_t1 = t1[good_indices]
         new_s2 = s2.iloc[good_indices]
         
-        # m_moa = (-2.5 * np.log10(new_t1['flux'])) + new_s2['MOA_R_est'].values
         m_moa = (-2.5 * np.log10(new_t1['flux']))
-        # # calculating zero point
+        # calculating zero point
         zp = new_s2['MOA_R_est'].values - m_moa
         print(np.nanmean(zp))
         
